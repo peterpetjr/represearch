@@ -1,0 +1,192 @@
+---
+title: "PA_Template RepDataAssessment2"
+author: "Pedro Pallares"
+date: "17/9/2021"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+
+## Set path directory
+
+```{r 
+
+setwd("/users/pedropj/dropbox/coursera/MOD2Research/represearch/")
+
+
+```
+
+## Load libraries
+
+```{r }
+
+library(stats)
+library(ggplot2)
+library(knitr)
+library(dplyr)
+
+
+```
+
+
+My code for assessment week 2, read an processing the data
+========================================
+
+
+## 1. Load the data
+
+```{r }
+
+
+
+
+datos <- read.csv("activity.csv")
+summary(datos)
+
+
+```
+
+
+## Process/transform the data
+
+ Histogram of the total number of steps taken each day, median and mean 
+========================================
+
+```{r }
+
+
+pordia <- group_by(datos, date)
+
+pasopordia <-summarise(pordia, total=sum(steps))
+
+print(pasopordia)
+
+head(pasopordia)
+tail(pasopordia)
+
+hist(pasopordia$total, main= "Promedio de pasos por dia", xlab = "Total de pasos en un dia", ylab = "Frecuencia")
+
+summary(pasopordia)
+
+
+
+```
+
+
+## What is the average daily activity patternwith time series plot
+
+
+```{r }
+
+pasos_por_intervalo <- aggregate(steps ~ interval, datos, mean)
+print(pasos_por_intervalo)
+
+pasos_por_intervalo_media <- aggregate(steps ~ interval, datos, median)
+print(pasos_por_intervalo_media)
+plot(pasos_por_intervalo$interval, pasos_por_intervalo$steps, type='l', 
+     main="Gráfica de pasos promedio por dia", xlab="Intervalo", 
+     ylab="Numero de pasos promedio")
+
+
+# Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+
+
+Inter_max_pasos <- which.max(pasos_por_intervalo$steps)
+
+
+# numero de pasos mÃ ximo por intervalo, intervalo 835
+
+pasos_por_intervalo[Inter_max_pasos, ]
+print(pasos_por_intervalo)
+
+
+
+# Numero total de renglones con pasos steps = NA, 2304
+
+print(sum(is.na(datos)))
+
+
+```
+
+
+## Imputing missing files
+
+```{r }
+
+# Numero total de renglones con pasos steps = NA, 2304
+
+print(sum(is.na(datos)))
+
+
+# Devise a strategy for filling
+
+nuevos_datos <- datos
+
+for (i in 1:nrow(nuevos_datos)) {
+  if (is.na(nuevos_datos$steps[i])) {
+    valor_intervalo  <- nuevos_datos$interval[i]
+    valor_pasos <- pasos_por_intervalo_media[
+      pasos_por_intervalo_media$interval == valor_intervalo,]
+    nuevos_datos$steps[i] <- valor_pasos$steps
+  }
+}
+
+print(nuevos_datos)
+
+
+# calcular el numero de pasos por dia creando un nuevo dataset nuevos_datos
+
+nuevos_pasos_dia <- aggregate(steps ~ date, nuevos_datos, sum)
+
+print(nuevos_pasos_dia)
+head(nuevos_pasos_dia)
+
+# histograma del nuevo dataset con los campos sin NA
+
+
+hist(nuevos_pasos_dia$steps, main="Histograma de los pasos por dia sin NA", 
+     xlab="Total total de numero de pasos en un dia")
+
+
+summary(nuevos_pasos_dia)
+print (summary(nuevos_pasos_dia))
+
+```
+
+Are the differences in activity patterns  between weekdays and weekends?
+========================================
+
+
+```{r }
+
+# existen difreencias entre los patrones de pasos entre semana y fin de semana, usa weekday()
+
+nuevos_datos['tipo_de_dia'] <- weekdays(as.Date(nuevos_datos$date))
+nuevos_datos$tipo_de_dia[nuevos_datos$tipo_de_dia  %in% c('Saturday','Sunday') ] <- "findesemana"
+nuevos_datos$tipo_de_dia[nuevos_datos$tipo_de_dia != "findesemana"] <- "diasemana"
+
+# convert type_of_day from character to factor
+nuevos_datos$tipo_de_dia <- as.factor(nuevos_datos$tipo_de_dia)
+
+# calculate average steps by interval across all days
+nuevos_pasos_por_intervalo <- aggregate(steps ~ interval + tipo_de_dia, nuevos_datos, mean)
+
+# Crear una grÃ fica
+qplot(interval, steps, data = nuevos_pasos_por_intervalo, type = 'l', geom=c("line"), xlab = "Intervalo", ylab = "Numero de pasos", main = "") + facet_wrap(~ tipo_de_dia, ncol = 1)
+
+
+```
+
+
+
+
+
+
+
